@@ -1,5 +1,5 @@
 // #region license
-// Copyright 2024 Utah Departement of Transportation
+// Copyright 2026 Utah Departement of Transportation
 // for WebUI - deleteUser.ts
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,6 +31,7 @@ export function useDeleteUser() {
     url: route,
     axiosInstance: identityAxios,
     headers,
+    notify: false,
   })
   return mutation
 }

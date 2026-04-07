@@ -1,5 +1,5 @@
 #region license
-// Copyright 2025 Utah Departement of Transportation
+// Copyright 2026 Utah Departement of Transportation
 // for Application - Utah.Udot.Atspm.Business.TurningMovementCounts/TurningMovementCountsResult.cs
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,9 +22,9 @@ namespace Utah.Udot.Atspm.Business.TurningMovementCounts
     /// </summary>
     public class TurningMovementCountsResult
     {
-        public KeyValuePair<DateTime, int> PeakHour { get; set; }
         public List<TurningMovementCountsLanesResult> Charts { get; set; }
         public List<TurningMovementCountData> Table { get; set; }
-        public double PeakHourFactor { get; set; }
+        public KeyValuePair<DateTime, int>? PeakHour { get; set; }
+        public double? PeakHourFactor { get; set; }
     }
 }

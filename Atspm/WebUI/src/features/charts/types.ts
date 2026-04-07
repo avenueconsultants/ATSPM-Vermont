@@ -1,5 +1,5 @@
 // #region license
-// Copyright 2024 Utah Departement of Transportation
+// Copyright 2026 Utah Departement of Transportation
 // for WebUI - types.ts
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +17,7 @@
 import { EChartsOption } from 'echarts'
 import { ApproachVolumeSummaryData } from './approachVolume/types'
 import { ChartType, ToolType } from './common/types'
+import type { RawTurningMovementCountTableRow } from './turningMovementCounts/types'
 
 export interface ExtendedEChartsOption extends EChartsOption {
   displayProp?: {
@@ -61,13 +62,25 @@ export interface TransformedPreemptDetailsResponse {
     charts: StandardChart[]
   }
 }
+
+export type TableRow = (string | number)[]
+export type ColumnGroup = { title: string | null; columns: string[] }
+
+export interface Labels {
+  columnGroups: ColumnGroup[]
+  flatColumns: string[]
+}
+
 export interface TransformedTurningMovementCountsResponse {
   type: ChartType
   data: {
+    labels: Labels
+    table: RawTurningMovementCountTableRow[]
     charts: StandardChart[]
-    table: any
-    peakHourFactor: number
-    peakHour: { key: string; value: string }
+    peakHour?: {
+      peakHourFactor: number | null
+      peakHourData: TableRow[]
+    } | null
   }
 }
 

@@ -1,5 +1,5 @@
 #region license
-// Copyright 2025 Utah Departement of Transportation
+// Copyright 2026 Utah Departement of Transportation
 // for ConfigApi - %Namespace%/Program.cs
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,23 +15,22 @@
 // limitations under the License.
 #endregion
 
-using Asp.Versioning;
 using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.AspNetCore.OData;
-using Microsoft.Extensions.Options;
-using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Utah.Udot.Atspm.ConfigApi.Configuration;
 using Utah.Udot.Atspm.ConfigApi.Services;
 using Utah.Udot.Atspm.Infrastructure.Extensions;
 using Utah.Udot.Atspm.Infrastructure.Services;
+using Utah.Udot.ATSPM.ConfigApi.Mappings;
 using Utah.Udot.ATSPM.ConfigApi.Utility;
+using Utah.Udot.NetStandardToolkit.Configuration;
 using Utah.Udot.NetStandardToolkit.Extensions;
+using Utah.Udot.NetStandardToolkit.Services.GitHubReleaseService;
 
-//gitactions: III
+//git 2
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
@@ -39,15 +38,17 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Host
     .ApplyVolumeConfiguration()
+    .ConfigureLogging((h, l) => l.AddGoogle(h))
     .ConfigureServices((h, s) =>
     {
         s.AddControllers(o =>
         {
             o.ReturnHttpNotAcceptable = true;
             o.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status406NotAcceptable));
+            //o.Filters.Add(new ProducesAttribute("application/json", "application/xml"));
+            //o.OutputFormatters.Add(new EventLogCsvFormatter());
             o.OutputFormatters.RemoveType<StringOutputFormatter>();
-        }).AddXmlDataContractSerializerFormatters()
-        .AddJsonOptions(o =>
+        }).AddJsonOptions(o =>
         {
             o.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
             o.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
@@ -63,54 +64,22 @@ builder.Host
             o.RouteOptions.EnableUnqualifiedOperationCall = true;
         });
         s.AddProblemDetails();
-
-        //https://github.com/dotnet/aspnet-api-versioning/wiki/OData-Versioned-Metadata
-        s.AddApiVersioning(o =>
+        s.AddConfiguredCompression(new[] { "application/json", "application/xml", "text/csv", "application/x-ndjson" });
+        s.AddConfiguredSwagger(builder.Configuration, o =>
         {
-            o.ReportApiVersions = true;
-            o.DefaultApiVersion = new ApiVersion(1, 0);
-            o.AssumeDefaultVersionWhenUnspecified = true;
-
-            //Sunset policies
-            o.Policies.Sunset(0.1).Effective(DateTimeOffset.Now.AddDays(60)).Link("").Title("These are only available during development").Type("text/html");
-        })
-        .AddOData(o => o.AddRouteComponents("api/v{version:apiVersion}"))
-            .AddODataApiExplorer(o =>
-            {
-                o.GroupNameFormat = "'v'VVV";
-                o.SubstituteApiVersionInUrl = true;
-
-                //configure query options(which cannot otherwise be configured by OData conventions)
-                //o.QueryOptions.Controller<JurisdictionController>()
-                //                    .Action(c => c.Get(default))
-                //                        .Allow(AllowedQueryOptions.Skip | AllowedQueryOptions.Count)
-                //                        .AllowTop(100);
-            });
-
-        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-        builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
-        builder.Services.AddSwaggerGen(o =>
-        {
-            o.IncludeXmlComments(typeof(Program));
+            o.IncludeXmlComments(typeof(Program).Assembly);
             o.CustomOperationIds((controller, verb, action) => $"{verb}{controller}{action}");
             o.EnableAnnotations();
             o.AddJwtAuthorization();
             o.DocumentFilter<GenerateMeasureOptionSchemas>();
-        });
-
-        var allowedHosts = builder.Configuration.GetSection("AllowedHosts").Get<string>() ?? "*";
-        s.AddCors(options =>
+        }, v =>
+        v.AddOData(o => o.AddRouteComponents("api/v{version:apiVersion}"))
+        .AddODataApiExplorer(o =>
         {
-            options.AddPolicy("CorsPolicy",
-            builder =>
-            {
-                builder.WithOrigins(allowedHosts.Split(','))
-                       .AllowAnyMethod()
-                       .AllowAnyHeader();
-            });
-        });
-
-        //https://learn.microsoft.com/en-us/aspnet/core/fundamentals/http-logging/?view=aspnetcore-7.0
+            o.GroupNameFormat = "'v'VVV";
+            o.SubstituteApiVersionInUrl = true;
+        }));
+        s.AddConfiguredCors(builder.Configuration);
         s.AddHttpLogging(l =>
         {
             l.LoggingFields = HttpLoggingFields.All;
@@ -120,47 +89,80 @@ builder.Host
             l.RequestBodyLogLimit = 4096;
             l.ResponseBodyLogLimit = 4096;
         });
-
         s.AddAtspmDbContext(h);
         s.AddAtspmEFConfigRepositories();
         s.AddScoped<IRouteService, RouteService>();
         s.AddScoped<IApproachService, ApproachService>();
         s.AddPathBaseFilter(h);
+
         s.AddAtspmIdentity(h);
 
+
+
+
+
+
+        s.Configure<GitHubReleaseConfiguration>(options =>
+        {
+            options.UserAgengt = "AtspmAgent";
+            options.RepositoryOwner = "utahudot";
+            options.RepositoryName = "udot-atspm";
+        });
+
+
+
+
+
+
+
+        s.AddHttpClient<IGitHubReleaseService, GitHubReleaseService>();
+
+        s.AddAutoMapper(c =>
+        {
+            c.AddProfile<VersionMappingProfile>();
+        });
+
         s.AddScoped<ILocationManager, LocationManager>();
+        s.AddHealthChecks();
     });
 
 var app = builder.Build();
 
+#region Middleware Pipeline
+
+//Error handling
 if (!app.Environment.IsProduction())
 {
-    // navigate to ~/$odata to determine whether any endpoints did not match an odata route template
-    app.UseODataRouteDebug();
     app.Services.PrintHostInformation();
+    app.UseODataRouteDebug();
     app.UseDeveloperExceptionPage();
 }
-
-app.UseCors("CorsPolicy");
-app.UseHttpLogging();
-app.UseSwagger();
-app.UseSwaggerUI(o =>
+else
 {
-    var descriptions = app.DescribeApiVersions();
+    app.UseExceptionHandler("/error");
+}
 
-    // build a swagger endpoint for each discovered API version
-    foreach (var description in descriptions)
-    {
-        var url = $"{app.Configuration["PathBaseSettings:ApplicationPathBase"]}/swagger/{description.GroupName}/swagger.json";
-        var name = description.GroupName.ToUpperInvariant();
-        o.SwaggerEndpoint(url, name);
-    }
-});
-
+//Security
 app.UseHttpsRedirection();
+app.UseCors("Default");
 app.UseAuthentication();
 app.UseAuthorization();
+
+//Cross-cutting
+app.UseResponseCompression();
+app.UseHttpLogging();
+
+//Swagger
+app.UseConfiguredSwaggerUI();
+
+//Endpoints
 app.UseVersionedODataBatching();
 app.MapControllers();
+app.MapJsonHealthChecks();
+
+#endregion
 
 app.Run();
+
+
+

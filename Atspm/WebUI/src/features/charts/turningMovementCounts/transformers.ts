@@ -1,5 +1,5 @@
 // #region license
-// Copyright 2024 Utah Departement of Transportation
+// Copyright 2026 Utah Departement of Transportation
 // for WebUI - transformers.ts
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,13 +31,24 @@ import {
   transformSeriesData,
 } from '@/features/charts/common/transformers'
 import { ChartType } from '@/features/charts/common/types'
-import { TransformedChartResponse } from '@/features/charts/types'
+import {
+  ColumnGroup,
+  Labels,
+  TableRow,
+  TransformedChartResponse,
+} from '@/features/charts/types'
 import {
   Color,
   SolidLineSeriesSymbol,
   formatChartDateTimeRange,
 } from '@/features/charts/utils'
+import { addHours, format } from 'date-fns'
 import { EChartsOption, SeriesOption } from 'echarts'
+import {
+  compareTurningMovementDirections,
+  getAvailableTurningMovementDirections,
+  normalizeTurningMovementDirection,
+} from './directions'
 import {
   RawTurningMovementCountsData,
   RawTurningMovementCountsResponse,
@@ -46,53 +57,81 @@ import {
 export default function transformTurningMovementCountsData(
   response: RawTurningMovementCountsResponse
 ): TransformedChartResponse {
-  const charts = response.data.charts.map((data) => {
-    const chartOptions = transformData(data)
-    return {
-      chart: chartOptions,
-    }
-  })
+  const charts = response.data.charts
+    .slice()
+    .sort((a, b) => {
+      const directionDiff = compareTurningMovementDirections(
+        a.direction,
+        b.direction
+      )
+      if (directionDiff !== 0) return directionDiff
 
-  charts.sort((a, b) => {
-    const directionOrder = ['North', 'South', 'East', 'West']
-    const movementOrder = ['Left', 'Thru', 'Right']
+      return compareMovementTypes(a.movementType, b.movementType)
+    })
+    .map((data) => ({
+      chart: transformData(data),
+    }))
 
-    const titleA = a.chart.displayProps.description
-    const titleB = b.chart.displayProps.description
+  const directions = getAvailableTurningMovementDirections(
+    response.data.table.map((row) => row.direction)
+  )
+  const preferred = [
+    'Left',
+    'Thru-Left',
+    'Thru',
+    'Thru + Thru-Right',
+    'Thru-Right',
+    'Right',
+  ]
 
-    const directionA = directionOrder.find((dir) => titleA.includes(dir)) || ''
-    const directionB = directionOrder.find((dir) => titleB.includes(dir)) || ''
+  const movementTypes = buildMovementTypeMap(
+    response.data.table,
+    preferred,
+    directions
+  )
+  const labels = buildLabels(directions, movementTypes)
 
-    const movementA = movementOrder.find((mov) => titleA.includes(mov)) || ''
-    const movementB = movementOrder.find((mov) => titleB.includes(mov)) || ''
-
-    const directionDiff =
-      directionOrder.indexOf(directionA) - directionOrder.indexOf(directionB)
-    if (directionDiff !== 0) return directionDiff
-
-    return movementOrder.indexOf(movementA) - movementOrder.indexOf(movementB)
-  })
+  const peakRow = buildPeakHourRow(
+    response.data.table,
+    response.data.peakHour,
+    directions,
+    movementTypes
+  )
 
   return {
     type: ChartType.TurningMovementCounts,
     data: {
-      charts,
+      labels,
       table: response.data.table,
-      peakHourFactor: response.data.peakHourFactor,
-      peakHour: response.data.peakHour,
+      charts,
+      peakHour:
+        response.data.peakHour && peakRow
+          ? {
+              peakHourFactor: response.data.peakHourFactor,
+              peakHourData: [peakRow],
+            }
+          : null,
     },
   }
 }
 
-function transformData(data: RawTurningMovementCountsData) {
-  const { lanes, plans, totalHourlyVolumes } = data
+function transformData(data: RawTurningMovementCountsData): EChartsOption {
+  const {
+    lanes,
+    plans,
+    peakHour,
+    peakHourFactor,
+    peakHourVolume,
+    laneUtilizationFactor,
+  } = data
+  const totalHourlyVolumes = data.totalHourlyVolumes ?? []
 
   const info = createInfoString(
     ['Total Volume: ', `${data.totalVolume.toLocaleString()}`],
-    ['Peak Hour: ', data.peakHour],
-    ['Peak Hour Volume: ', data.peakHourVolume.toLocaleString()],
-    ['Peak Hour Factor: ', data.peakHourFactor.toFixed(2)],
-    ['fLU: ', data.laneUtilizationFactor.toFixed(2)]
+    ['Peak Hour: ', peakHour ?? 'N/A'],
+    ['Peak Hour Volume: ', peakHourVolume.toLocaleString() ?? 'N/A'],
+    ['Peak Hour Factor: ', peakHourFactor?.toFixed(2) ?? 'N/A'],
+    ['fLU: ', laneUtilizationFactor.toFixed(2)]
   )
 
   const titleHeader = `Turning Movement Counts\n${data.locationDescription} - ${data.direction} ${data.movementType} - ${data.laneType}`
@@ -150,7 +189,7 @@ function transformData(data: RawTurningMovementCountsData) {
   const tooltip = createTooltip()
 
   const colorValues = Object.values(Color)
-
+  
   const series: SeriesOption[] = []
 
   if (lanes.length > 1) {
@@ -201,4 +240,107 @@ function transformData(data: RawTurningMovementCountsData) {
   }
 
   return chartOptions
+}
+
+function formatTime(timestamp: string | Date) {
+  return format(new Date(timestamp), 'HH:mm')
+}
+
+function compareMovementTypes(a: string, b: string) {
+  const movementOrder = [
+    'Left',
+    'Thru-Left',
+    'Thru',
+    'Thru + Thru-Right',
+    'Thru-Right',
+    'Right',
+  ]
+  const orderA = movementOrder.indexOf(a)
+  const orderB = movementOrder.indexOf(b)
+
+  if (orderA !== orderB) {
+    if (orderA === -1) return 1
+    if (orderB === -1) return -1
+    return orderA - orderB
+  }
+
+  return a.localeCompare(b)
+}
+
+function buildMovementTypeMap(
+  table: RawTurningMovementCountsResponse['data']['table'],
+  preferredOrder: string[],
+  directions: string[]
+) {
+  const map: Record<string, string[]> = {}
+  directions.forEach((dir) => {
+    const set = new Set(
+      table
+        .filter((d) => normalizeTurningMovementDirection(d.direction) === dir)
+        .map((d) => d.movementType)
+    )
+    const arr = Array.from(set).sort((a, b) => {
+      const ia = preferredOrder.indexOf(a)
+      const ib = preferredOrder.indexOf(b)
+      if (ia === -1 || ib === -1) return a.localeCompare(b)
+      return ia - ib
+    })
+    map[dir] = arr
+  })
+  return map
+}
+
+function buildLabels(
+  directions: string[],
+  movementTypes: Record<string, string[]>
+): Labels {
+  const columnGroups: ColumnGroup[] = [{ title: null, columns: ['Hour'] }]
+
+  directions.forEach((dir) => {
+    columnGroups.push({
+      title: dir,
+      columns: [...movementTypes[dir], 'Total'],
+    })
+  })
+
+  columnGroups.push({ title: null, columns: ['Bin Total'] })
+
+  const flatColumns = columnGroups.flatMap((g) => g.columns)
+  return { columnGroups, flatColumns }
+}
+
+function buildPeakHourRow(
+  rawTable: RawTurningMovementCountsResponse['data']['table'],
+  peakHour: { key: string; value: number } | null,
+  directions: string[],
+  movementTypes: Record<string, string[]>
+): TableRow | null {
+  if (!peakHour?.key) return null
+
+  const valueAtPH = (dir: string, mt: string) =>
+    rawTable.find(
+      (r) =>
+        normalizeTurningMovementDirection(r.direction) === dir &&
+        r.movementType === mt
+    )?.peakHourVolume?.value ?? 0
+
+  const start = new Date(peakHour.key)
+  const desc = `${formatTime(start)} - ${formatTime(addHours(start, 1))}`
+
+  const row: TableRow = [desc]
+  let binTotal = 0
+
+  directions.forEach((dir) => {
+    let dirSum = 0
+    movementTypes[dir].forEach((mt) => {
+      const v = valueAtPH(dir, mt)
+      row.push(v)
+      dirSum += v
+    })
+    row.push(dirSum)
+    binTotal += dirSum
+  })
+
+  row.push(binTotal)
+  return row
 }

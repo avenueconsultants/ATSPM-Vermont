@@ -1,5 +1,5 @@
 // #region license
-// Copyright 2024 Utah Departement of Transportation
+// Copyright 2026 Utah Departement of Transportation
 // for WebUI - watchdogDetectionTypeCount.transformer.ts
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,10 +39,11 @@ const transformDetectionTypeCountData = (
     legend: {
       type: 'scroll',
       orient: 'vertical',
-      top: "25%",
-      right: 5,
+      top: '22%',
+      right: 20,
       itemWidth: 26,
       itemHeight: 15,
+      itemGap: 20,
       textStyle: {
         fontSize: 13,
       },

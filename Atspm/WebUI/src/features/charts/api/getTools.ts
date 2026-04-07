@@ -1,5 +1,5 @@
 // #region license
-// Copyright 2024 Utah Departement of Transportation
+// Copyright 2026 Utah Departement of Transportation
 // for WebUI - getTools.ts
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,10 +23,10 @@ import { TransformedToolResponse } from '../types'
 import { transformToolData } from './transformData'
 
 export const toolTypeApiMap: Record<ToolType, string> = {
-  [ToolType.TimeSpaceHistoric]: '/TimeSpaceDiagram/GetReportData',
-  [ToolType.TimeSpaceAverage]: '/TimeSpaceDiagramAverage/GetReportData',
-  [ToolType.LinkPivot]: '/LinkPivot/GetReportData',
-  [ToolType.LpPcd]: '/LinkPivot/getPcdData',
+  [ToolType.TimeSpaceHistoric]: '/api/v1/TimeSpaceDiagram/GetReportData',
+  [ToolType.TimeSpaceAverage]: '/api/v1/TimeSpaceDiagramAverage/GetReportData',
+  [ToolType.LinkPivot]: '/api/v1/LinkPivot/GetReportData',
+  [ToolType.LpPcd]: '/api/v1/LinkPivot/getPcdData',
 }
 
 type QueryFnType = typeof getTools

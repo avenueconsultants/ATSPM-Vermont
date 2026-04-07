@@ -1,5 +1,5 @@
 ﻿#region license
-// Copyright 2025 Utah Departement of Transportation
+// Copyright 2026 Utah Departement of Transportation
 // for EventLogUtility - Utah.Udot.Atspm.EventLogUtility.Commands/LogConsoleCommand.cs
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -136,15 +136,6 @@ namespace Utah.Udot.Atspm.EventLogUtility.Commands
         {
             AddAlias("-bs");
             //SetDefaultValue(50000);
-        }
-    }
-
-    public class PrallelProcessesOption : Option<int>
-    {
-        public PrallelProcessesOption() : base("--parallel-processes", "Amount of processes that can be run in parallel")
-        {
-            AddAlias("-pp");
-            //SetDefaultValue(50);
         }
     }
 

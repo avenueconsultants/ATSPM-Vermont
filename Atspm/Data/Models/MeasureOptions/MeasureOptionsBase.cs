@@ -1,5 +1,5 @@
 ﻿#region license
-// Copyright 2025 Utah Departement of Transportation
+// Copyright 2026 Utah Departement of Transportation
 // for Data - Utah.Udot.Atspm.Data.Models.MeasureOptions/MeasureOptionsBase.cs
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +17,7 @@
 
 using System.Runtime.Serialization;
 using Utah.Udot.Atspm.Data.Interfaces;
-using Utah.Udot.NetStandardToolkit.Common;
+using Utah.Udot.NetStandardToolkit.Interfaces;
 
 namespace Utah.Udot.Atspm.Data.Models.MeasureOptions
 {
@@ -293,6 +293,7 @@ namespace Utah.Udot.Atspm.Data.Models.MeasureOptions
     public class TurningMovementCountsOptions : MeasureOptionsBase, IBinSize
     {
         public int BinSize { get; set; }
+        public bool CombineThruRight { get; set; }
         public int MetricTypeId { get; internal set; } = 5;
         //public string LocationIdentifier { get; set; }
     }
