@@ -1,5 +1,5 @@
 // #region license
-// Copyright 2024 Utah Departement of Transportation
+// Copyright 2026 Utah Departement of Transportation
 // for WebUI - tranformers.ts
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -243,7 +243,7 @@ function transformData(data: RawSplitMonitorData) {
   const plansSeries = createPlans(plans, yAxis.length, planOptions, 100)
 
   const displayProps = createDisplayProps({
-    description: 'ph' + data.phaseNumber.toLocaleString(),
+    description: data.phaseDescription,
     plans: plans,
     phaseNumber: data.phaseNumber,
   })

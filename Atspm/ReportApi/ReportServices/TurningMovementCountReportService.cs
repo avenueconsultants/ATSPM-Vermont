@@ -1,5 +1,5 @@
 ﻿#region license
-// Copyright 2025 Utah Departement of Transportation
+// Copyright 2026 Utah Departement of Transportation
 // for ReportApi - Utah.Udot.Atspm.ReportApi.ReportServices/TurningMovementCountReportService.cs
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,6 +27,7 @@ namespace Utah.Udot.Atspm.ReportApi.ReportServices
     /// </summary>
     public class TurningMovementCountReportService : ReportServiceBase<TurningMovementCountsOptions, TurningMovementCountsResult>
     {
+        private const string CombinedThruRightMovementType = "Thru + Thru-Right";
         private readonly IIndianaEventLogRepository controllerEventLogRepository;
         private readonly TurningMovementCountsService turningMovementCountsService;
         private readonly ILocationRepository LocationRepository;
@@ -94,94 +95,174 @@ namespace Utah.Udot.Atspm.ReportApi.ReportServices
             //Get Lane results by direction and movement type and bin size anc create a list of TurningMovementCountData for each direction and movement type
             foreach (var direction in Location.Approaches.Select(a => a.DirectionTypeId).Distinct())
             {
-                var laneResultsByDirection = finalLaneResultcheck.Where(r => r.Direction == direction.GetAttributeOfType<DisplayAttribute>().Name).ToList();
-                var movementTypes = laneResultsByDirection.Select(r => r.MovementType).Distinct().ToList();
-                foreach (var movementType in movementTypes)
+                var distinctLaneTypesByDirection = finalLaneResultcheck.Where(r => r.Direction == direction.GetAttributeOfType<DisplayAttribute>().Name).Select(i => i.LaneType).Distinct().ToList();
+                foreach (var laneTypeByDirection in distinctLaneTypesByDirection)
                 {
-                    var laneResultsByMovementType = laneResultsByDirection.Where(r => r.MovementType == movementType).ToList();
-                    if (laneResultsByMovementType.IsNullOrEmpty())
+                    var laneResultsByDirection = finalLaneResultcheck.Where(r => r.Direction == direction.GetAttributeOfType<DisplayAttribute>().Name && r.LaneType == laneTypeByDirection).ToList();
+                    var movementTypes = laneResultsByDirection.Select(r => r.MovementType).Distinct().ToList();
+                    foreach (var movementType in movementTypes)
                     {
-                        continue;
-                    }
-                    var turningMovementCountData = new TurningMovementCountData
-                    {
-                        Direction = direction.GetAttributeOfType<DisplayAttribute>().Name,
-                        LaneType = laneResultsByMovementType.FirstOrDefault().LaneType,
-                        MovementType = movementType
-                    };
+                        var laneResultsByMovementType = laneResultsByDirection.Where(r => r.MovementType == movementType).ToList();
+                        if (laneResultsByMovementType.IsNullOrEmpty())
+                        {
+                            continue;
+                        }
+                        var turningMovementCountData = new TurningMovementCountData
+                        {
+                            Direction = direction.GetAttributeOfType<DisplayAttribute>().Name,
+                            LaneType = laneResultsByMovementType.FirstOrDefault().LaneType,
+                            MovementType = movementType
+                        };
 
-                    //sum the totalVolumes.value grouped by toalVolume.Start and add to turningMovementCountData.Volumes
-                    turningMovementCountData.Volumes = laneResultsByMovementType
-                        .SelectMany(r => r.TotalVolumes)
-                        .GroupBy(v => v.Timestamp)
-                        .Select(g => new DataPointForInt(g.Key, g.Sum(v => v.Value)))
-                        .ToList();
-                    finalResultcheck.Table.Add(turningMovementCountData);
+                        //sum the totalVolumes.value grouped by toalVolume.Start and add to turningMovementCountData.Volumes
+                        turningMovementCountData.Volumes = laneResultsByMovementType
+                            .SelectMany(r => r.TotalVolumes)
+                            .GroupBy(v => v.Timestamp)
+                            .Select(g => new DataPointForInt(g.Key, g.Sum(v => v.Value)))
+                            .ToList();
+                        finalResultcheck.Table.Add(turningMovementCountData);
+                    }
                 }
             }
-            finalResultcheck.PeakHour = FindPeakHour(finalResultcheck.Table);
-            SetPeakHourFactor(finalResultcheck);
+            ComputePeakHourAndFactor(finalResultcheck, parameter.Start, parameter.End, parameter.BinSize);
             SetPeakHourVolume(finalResultcheck);
             return finalResultcheck;
         }
 
-        private void SetPeakHourVolume(TurningMovementCountsResult turningMovementCountsResult)
+        private void SetPeakHourVolume(TurningMovementCountsResult result)
         {
-            foreach (var lane in turningMovementCountsResult.Table)
+            if (!result.PeakHour.HasValue)
             {
-                lane.PeakHourVolume = new DataPointForInt(turningMovementCountsResult.PeakHour.Key, lane.Volumes
-                    .Where(t => t.Timestamp >= turningMovementCountsResult.PeakHour.Key
-                                                   && t.Timestamp < turningMovementCountsResult.PeakHour.Key.AddHours(1))
-                    .Sum(t => t.Value));
+                foreach (var lane in result.Table)
+                    lane.PeakHourVolume = null;
+                return;
+            }
+
+            var peakStart = result.PeakHour.Value.Key;
+            const int AGG = 15;
+            const int QUARTS = 4;
+
+            foreach (var lane in result.Table)
+            {
+                int hourTotal = 0;
+
+                for (int i = 0; i < QUARTS; i++)
+                {
+                    var binStart = peakStart.AddMinutes(i * AGG);
+                    var binEnd = binStart.AddMinutes(AGG);
+
+                    hourTotal += lane.Volumes
+                        .Where(v => v.Timestamp >= binStart && v.Timestamp < binEnd)
+                        .Sum(v => v.Value);
+                }
+
+                lane.PeakHourVolume = new DataPointForInt(peakStart, hourTotal);
             }
         }
 
-        private void SetPeakHourFactor(TurningMovementCountsResult turningMovementCountsResult)
+
+        private void ComputePeakHourAndFactor(
+             TurningMovementCountsResult result,
+             DateTime periodStart,
+             DateTime periodEnd,
+             int binSizeMinutes)
         {
-            try
+            if (60 % binSizeMinutes != 0 || (periodEnd - periodStart).TotalMinutes < 60)
             {
-                if (turningMovementCountsResult.Table
-                        .Where(t => t.LaneType == "Vehicle")
-                        .SelectMany(t => t.Volumes)
-                        .Where(t => t.Timestamp >= turningMovementCountsResult.PeakHour.Key
-                                    && t.Timestamp < turningMovementCountsResult.PeakHour.Key.AddHours(1))
-                        .Count() > 0)
+                result.PeakHour = null;
+                result.PeakHourFactor = null;
+                return;
+            }
+
+            var allBins = result.Table
+                .Where(l => l.LaneType == "Vehicle")
+                .SelectMany(l => l.Volumes)
+                .Where(v => v.Timestamp >= periodStart && v.Timestamp < periodEnd)
+                .GroupBy(v => v.Timestamp)
+                .Select(g => new { Time = g.Key, Sum = g.Sum(v => v.Value) })
+                .OrderBy(x => x.Time)
+                .ToList();
+
+            int binsPerHour = 60 / binSizeMinutes;
+            if (allBins.Count < binsPerHour)
+            {
+                result.PeakHour = null;
+                result.PeakHourFactor = null;
+                return;
+            }
+
+            int bestSum = 0;
+            DateTime bestStart = DateTime.MinValue;
+            for (int i = 0; i + binsPerHour <= allBins.Count; i++)
+            {
+                int windowSum = 0;
+                for (int j = 0; j < binsPerHour; j++)
+                    windowSum += allBins[i + j].Sum;
+
+                if (windowSum > bestSum)
                 {
-                    var maxCount = turningMovementCountsResult.Table
-                        .Where(t => t.LaneType == "Vehicle")
-                        .SelectMany(t => t.Volumes)
-                        .GroupBy(t => t.Timestamp)
-                        .Select(t => new { Id = t.Key, Count = t.Sum(y => y.Value) })
-                        .Max(t => t.Count);
-                    double denominator = 4 * maxCount;
-                    if (denominator != 0)
-                        turningMovementCountsResult.PeakHourFactor = Math.Round(turningMovementCountsResult.PeakHour.Value / denominator, 2);
+                    bestSum = windowSum;
+                    bestStart = allBins[i].Time;
                 }
             }
-            catch
+
+            result.PeakHour = new KeyValuePair<DateTime, int>(bestStart, bestSum);
+
+            if (15 % binSizeMinutes != 0)
             {
-                throw new Exception("Error Setting Peak Hour");
+                result.PeakHourFactor = null;
+                return;
             }
+
+            var hourBins = allBins
+                .Where(x => x.Time >= bestStart && x.Time < bestStart.AddHours(1))
+                .Select(x => x.Sum)
+                .ToList();
+
+            if (hourBins.Count == 0)
+            {
+                result.PeakHourFactor = null;
+                return;
+            }
+
+            var quarterSums = new int[4];
+            foreach (var x in allBins.Where(b => b.Time >= bestStart && b.Time < bestStart.AddHours(1)))
+            {
+                int minsPast = (int)(x.Time - bestStart).TotalMinutes;
+                int idx = Math.Min(3, minsPast / 15);
+                quarterSums[idx] += x.Sum;
+            }
+
+            int peakQuarter = quarterSums.Max();
+            int denom = peakQuarter * 4;
+
+            result.PeakHourFactor = denom == 0
+                ? (double?)null
+                : Math.Round((double)bestSum / denom, 2);
         }
 
-        private KeyValuePair<DateTime, int> FindPeakHour(List<TurningMovementCountData> turnningMovementCountData)
+        private static IReadOnlyList<(string DisplayName, MovementTypes[] MovementTypes)> GetMovementTypeGroups(
+            bool combineThruRight)
         {
-            var binStartTimes = turnningMovementCountData.SelectMany(t => t.Volumes).Select(v => v.Timestamp).Distinct().OrderBy(r => r).ToList();
-            var totalVolume = new KeyValuePair<DateTime, int>(DateTime.MinValue, 0);
-
-            foreach (var date in binStartTimes)
+            if (combineThruRight)
             {
-                var tempVolume = turnningMovementCountData
-                    .Where(t => t.LaneType == "Vehicle")
-                    .SelectMany(t => t.Volumes)
-                    .Where(t =>
-                        t.Timestamp >= date
-                        && t.Timestamp < date.AddHours(1))
-                    .Sum(t => t.Value);
-                if (tempVolume > totalVolume.Value)
-                    totalVolume = new KeyValuePair<DateTime, int>(date, tempVolume);
+                return new List<(string DisplayName, MovementTypes[] MovementTypes)>
+                {
+                    (MovementTypes.L.GetAttributeOfType<DisplayAttribute>().Name, new[] { MovementTypes.L }),
+                    (MovementTypes.TL.GetAttributeOfType<DisplayAttribute>().Name, new[] { MovementTypes.TL }),
+                    (CombinedThruRightMovementType, new[] { MovementTypes.T, MovementTypes.TR }),
+                    (MovementTypes.R.GetAttributeOfType<DisplayAttribute>().Name, new[] { MovementTypes.R }),
+                };
             }
-            return totalVolume;
+
+            return new List<(string DisplayName, MovementTypes[] MovementTypes)>
+            {
+                (MovementTypes.L.GetAttributeOfType<DisplayAttribute>().Name, new[] { MovementTypes.L }),
+                (MovementTypes.TL.GetAttributeOfType<DisplayAttribute>().Name, new[] { MovementTypes.TL }),
+                (MovementTypes.T.GetAttributeOfType<DisplayAttribute>().Name, new[] { MovementTypes.T }),
+                (MovementTypes.TR.GetAttributeOfType<DisplayAttribute>().Name, new[] { MovementTypes.TR }),
+                (MovementTypes.R.GetAttributeOfType<DisplayAttribute>().Name, new[] { MovementTypes.R }),
+            };
         }
 
         private async Task<IEnumerable<TurningMovementCountsLanesResult>> GetChartDataForLaneType(
@@ -201,12 +282,11 @@ namespace Utah.Udot.Atspm.ReportApi.ReportServices
             {
                 var detectorsForDirection = Location.Approaches.Where(a => a.DirectionTypeId == direction).SelectMany(a => a.GetDetectorsForMetricType(options.MetricTypeId)).ToList();
 
-                var movementTypesSorted = new List<MovementTypes> { MovementTypes.L, MovementTypes.TL, MovementTypes.T, MovementTypes.TR, MovementTypes.R };
-                foreach (var movementType in movementTypesSorted)
+                foreach (var movementTypeGroup in GetMovementTypeGroups(options.CombineThruRight))
                 {
-                    var movementTypeDetectors = new List<Detector>();
-
-                    movementTypeDetectors = detectorsForDirection.Where(d => d.MovementType == movementType).ToList();
+                    var movementTypeDetectors = detectorsForDirection
+                        .Where(d => movementTypeGroup.MovementTypes.Contains(d.MovementType))
+                        .ToList();
 
                     if (!movementTypeDetectors.IsNullOrEmpty())
                     {
@@ -215,7 +295,7 @@ namespace Utah.Udot.Atspm.ReportApi.ReportServices
                             plans,
                             controllerEventLogs,
                             movementTypeDetectors,
-                            movementType,
+                            movementTypeGroup.DisplayName,
                             laneType,
                             Location.LocationIdentifier,
                             Location.LocationDescription(),
@@ -234,7 +314,7 @@ namespace Utah.Udot.Atspm.ReportApi.ReportServices
             List<Plan> planEvents,
             List<IndianaEvent> controllerEventLogs,
             List<Detector> detectors,
-            MovementTypes movementType,
+            string movementTypeLabel,
             LaneTypes laneType,
             string locationIdentifier,
             string LocationDescription,
@@ -254,7 +334,7 @@ namespace Utah.Udot.Atspm.ReportApi.ReportServices
             var result = turningMovementCountsService.GetChartData(
                 detectors,
                 laneType,
-                movementType,
+                movementTypeLabel,
                 directionType,
                 options,
                 detectorEvents,

@@ -1,5 +1,5 @@
 ﻿#region license
-// Copyright 2025 Utah Departement of Transportation
+// Copyright 2026 Utah Departement of Transportation
 // for DatabaseInstaller - DatabaseInstaller.Services/TransferEventLogsService.cs
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -190,7 +190,7 @@ namespace DatabaseInstaller.Services
                                     {
                                         LocationIdentifier = location.LocationIdentifier,
                                         DeviceId = device.Id,
-                                        ArchiveDate = DateOnly.FromDateTime(start),
+                                        //ArchiveDate = DateOnly.FromDateTime(start),
                                         Start = start,
                                         End = end,
                                         Data = eventLogs

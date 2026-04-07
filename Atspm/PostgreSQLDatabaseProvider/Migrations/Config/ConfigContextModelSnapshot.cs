@@ -1,5 +1,5 @@
 ﻿#region license
-// Copyright 2025 Utah Departement of Transportation
+// Copyright 2026 Utah Departement of Transportation
 // for PostgreSQLDatabaseProvider - Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations/ConfigContextModelSnapshot.cs
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,7 +34,7 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.11")
+                .HasAnnotation("ProductVersion", "8.0.22")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -108,9 +108,11 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime?>("Created")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp");
 
                     b.Property<string>("CreatedBy")
+                        .ValueGeneratedOnAdd()
                         .IsUnicode(false)
                         .HasColumnType("text");
 
@@ -177,9 +179,11 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime?>("Created")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp");
 
                     b.Property<string>("CreatedBy")
+                        .ValueGeneratedOnAdd()
                         .IsUnicode(false)
                         .HasColumnType("text");
 
@@ -215,9 +219,11 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
                         .HasColumnType("character varying(5)");
 
                     b.Property<DateTime?>("Created")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp");
 
                     b.Property<string>("CreatedBy")
+                        .ValueGeneratedOnAdd()
                         .IsUnicode(false)
                         .HasColumnType("text");
 
@@ -343,9 +349,11 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime?>("Created")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp");
 
                     b.Property<string>("CreatedBy")
+                        .ValueGeneratedOnAdd()
                         .IsUnicode(false)
                         .HasColumnType("text");
 
@@ -423,9 +431,11 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
                         .HasColumnType("character varying(256)");
 
                     b.Property<DateTime?>("Created")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp");
 
                     b.Property<string>("CreatedBy")
+                        .ValueGeneratedOnAdd()
                         .IsUnicode(false)
                         .HasColumnType("text");
 
@@ -461,9 +471,11 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime?>("Created")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp");
 
                     b.Property<string>("CreatedBy")
+                        .ValueGeneratedOnAdd()
                         .IsUnicode(false)
                         .HasColumnType("text");
 
@@ -550,9 +562,11 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
                         .HasDefaultValueSql("((2000))");
 
                     b.Property<DateTime?>("Created")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp");
 
                     b.Property<string>("CreatedBy")
+                        .ValueGeneratedOnAdd()
                         .IsUnicode(false)
                         .HasColumnType("text");
 
@@ -645,9 +659,11 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
                         .HasColumnType("character varying(5)");
 
                     b.Property<DateTime?>("Created")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp");
 
                     b.Property<string>("CreatedBy")
+                        .ValueGeneratedOnAdd()
                         .IsUnicode(false)
                         .HasColumnType("text");
 
@@ -754,9 +770,11 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
                         .HasColumnType("character varying(8000)");
 
                     b.Property<DateTime?>("Created")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp");
 
                     b.Property<string>("CreatedBy")
+                        .ValueGeneratedOnAdd()
                         .IsUnicode(false)
                         .HasColumnType("text");
 
@@ -947,9 +965,11 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
                         .HasColumnType("character varying(50)");
 
                     b.Property<DateTime?>("Created")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp");
 
                     b.Property<string>("CreatedBy")
+                        .ValueGeneratedOnAdd()
                         .IsUnicode(false)
                         .HasColumnType("text");
 
@@ -996,9 +1016,11 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<DateTime?>("Created")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp");
 
                     b.Property<string>("CreatedBy")
+                        .ValueGeneratedOnAdd()
                         .IsUnicode(false)
                         .HasColumnType("text");
 
@@ -1087,9 +1109,11 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime?>("Created")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp");
 
                     b.Property<string>("CreatedBy")
+                        .ValueGeneratedOnAdd()
                         .IsUnicode(false)
                         .HasColumnType("text");
 
@@ -1154,9 +1178,11 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
                         .HasColumnType("character varying(255)");
 
                     b.Property<DateTime?>("Created")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp");
 
                     b.Property<string>("CreatedBy")
+                        .ValueGeneratedOnAdd()
                         .IsUnicode(false)
                         .HasColumnType("text");
 
@@ -1195,9 +1221,11 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime?>("Created")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp");
 
                     b.Property<string>("CreatedBy")
+                        .ValueGeneratedOnAdd()
                         .IsUnicode(false)
                         .HasColumnType("text");
 
@@ -1641,9 +1669,11 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime?>("Created")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp");
 
                     b.Property<string>("CreatedBy")
+                        .ValueGeneratedOnAdd()
                         .IsUnicode(false)
                         .HasColumnType("text");
 
@@ -1689,9 +1719,11 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
                         .HasColumnType("character varying(8)");
 
                     b.Property<DateTime?>("Created")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp");
 
                     b.Property<string>("CreatedBy")
+                        .ValueGeneratedOnAdd()
                         .IsUnicode(false)
                         .HasColumnType("text");
 
@@ -2059,9 +2091,11 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime?>("Created")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp");
 
                     b.Property<string>("CreatedBy")
+                        .ValueGeneratedOnAdd()
                         .IsUnicode(false)
                         .HasColumnType("text");
 
@@ -2115,9 +2149,11 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime?>("Created")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp");
 
                     b.Property<string>("CreatedBy")
+                        .ValueGeneratedOnAdd()
                         .IsUnicode(false)
                         .HasColumnType("text");
 
@@ -2166,9 +2202,11 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime?>("Created")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp");
 
                     b.Property<string>("CreatedBy")
+                        .ValueGeneratedOnAdd()
                         .IsUnicode(false)
                         .HasColumnType("text");
 
@@ -2202,9 +2240,11 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime?>("Created")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp");
 
                     b.Property<string>("CreatedBy")
+                        .ValueGeneratedOnAdd()
                         .IsUnicode(false)
                         .HasColumnType("text");
 
@@ -2237,9 +2277,11 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime?>("Created")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp");
 
                     b.Property<string>("CreatedBy")
+                        .ValueGeneratedOnAdd()
                         .IsUnicode(false)
                         .HasColumnType("text");
 
@@ -2285,9 +2327,11 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime?>("Created")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp");
 
                     b.Property<string>("CreatedBy")
+                        .ValueGeneratedOnAdd()
                         .IsUnicode(false)
                         .HasColumnType("text");
 
@@ -2355,6 +2399,121 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Utah.Udot.Atspm.Data.Models.UsageEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .HasMaxLength(200)
+                        .IsUnicode(false)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("ApiName")
+                        .HasMaxLength(32)
+                        .IsUnicode(false)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("ConnectionId")
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Controller")
+                        .HasMaxLength(200)
+                        .IsUnicode(false)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime?>("Created")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp");
+
+                    b.Property<string>("CreatedBy")
+                        .ValueGeneratedOnAdd()
+                        .IsUnicode(false)
+                        .HasColumnType("text");
+
+                    b.Property<long>("DurationMs")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(2000)
+                        .IsUnicode(false)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Method")
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime?>("Modified")
+                        .HasColumnType("timestamp");
+
+                    b.Property<string>("ModifiedBy")
+                        .IsUnicode(false)
+                        .HasColumnType("text");
+
+                    b.Property<string>("QueryString")
+                        .HasMaxLength(2000)
+                        .IsUnicode(false)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("RemoteIp")
+                        .HasMaxLength(45)
+                        .IsUnicode(false)
+                        .HasColumnType("character varying(45)");
+
+                    b.Property<int?>("ResultCount")
+                        .HasColumnType("integer");
+
+                    b.Property<long?>("ResultSizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Route")
+                        .HasMaxLength(2000)
+                        .IsUnicode(false)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<int>("StatusCode")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Success")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TraceId")
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(1024)
+                        .IsUnicode(false)
+                        .HasColumnType("character varying(1024)");
+
+                    b.Property<string>("UserId")
+                        .HasMaxLength(200)
+                        .IsUnicode(false)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Route");
+
+                    b.HasIndex("StatusCode");
+
+                    b.HasIndex("Timestamp");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UsageEntries");
+                });
+
             modelBuilder.Entity("Utah.Udot.Atspm.Data.Models.UserArea", b =>
                 {
                     b.Property<string>("UserId")
@@ -2406,63 +2565,6 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
                     b.ToTable("UserRegions");
                 });
 
-            modelBuilder.Entity("Utah.Udot.Atspm.Data.Models.VersionHistory", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime?>("Created")
-                        .HasColumnType("timestamp");
-
-                    b.Property<string>("CreatedBy")
-                        .IsUnicode(false)
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("Date")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp")
-                        .HasDefaultValue(new DateTime(2025, 7, 3, 6, 55, 1, 778, DateTimeKind.Local).AddTicks(1158));
-
-                    b.Property<DateTime?>("Modified")
-                        .HasColumnType("timestamp");
-
-                    b.Property<string>("ModifiedBy")
-                        .IsUnicode(false)
-                        .HasColumnType("text");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .IsUnicode(false)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<string>("Notes")
-                        .HasMaxLength(512)
-                        .IsUnicode(false)
-                        .HasColumnType("character varying(512)");
-
-                    b.Property<int?>("ParentId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Version")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .IsUnicode(false)
-                        .HasColumnType("character varying(64)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ParentId");
-
-                    b.ToTable("VersionHistory", t =>
-                        {
-                            t.HasComment("Version History");
-                        });
-                });
-
             modelBuilder.Entity("Utah.Udot.Atspm.Data.Models.WatchDogIgnoreEvent", b =>
                 {
                     b.Property<int>("Id")
@@ -2478,9 +2580,11 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime?>("Created")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp");
 
                     b.Property<string>("CreatedBy")
+                        .ValueGeneratedOnAdd()
                         .IsUnicode(false)
                         .HasColumnType("text");
 
@@ -2489,6 +2593,11 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
 
                     b.Property<int>("IssueType")
                         .HasColumnType("integer");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .IsUnicode(false)
+                        .HasColumnType("text");
 
                     b.Property<int>("LocationId")
                         .HasColumnType("integer");
@@ -2539,6 +2648,11 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
 
                     b.Property<int>("IssueType")
                         .HasColumnType("integer");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .IsUnicode(false)
+                        .HasColumnType("text");
 
                     b.Property<int>("LocationId")
                         .HasColumnType("integer");
@@ -2815,16 +2929,6 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
                     b.Navigation("Region");
                 });
 
-            modelBuilder.Entity("Utah.Udot.Atspm.Data.Models.VersionHistory", b =>
-                {
-                    b.HasOne("Utah.Udot.Atspm.Data.Models.VersionHistory", "Parent")
-                        .WithMany("Children")
-                        .HasForeignKey("ParentId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Parent");
-                });
-
             modelBuilder.Entity("Utah.Udot.Atspm.Data.Models.WatchDogIgnoreEvent", b =>
                 {
                     b.HasOne("Utah.Udot.Atspm.Data.Models.Location", "Location")
@@ -2913,11 +3017,6 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations
                     b.Navigation("NextLocations");
 
                     b.Navigation("PreviousLocations");
-                });
-
-            modelBuilder.Entity("Utah.Udot.Atspm.Data.Models.VersionHistory", b =>
-                {
-                    b.Navigation("Children");
                 });
 #pragma warning restore 612, 618
         }

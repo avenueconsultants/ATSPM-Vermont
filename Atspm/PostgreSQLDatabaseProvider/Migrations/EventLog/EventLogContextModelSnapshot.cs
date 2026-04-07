@@ -1,5 +1,5 @@
 ﻿#region license
-// Copyright 2025 Utah Departement of Transportation
+// Copyright 2026 Utah Departement of Transportation
 // for PostgreSQLDatabaseProvider - Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations.EventLog/EventLogContextModelSnapshot.cs
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -58,9 +58,6 @@ namespace Utah.Udot.ATSPM.PostgreSQLDatabaseProvider.Migrations.EventLog
 
                     b.Property<DateTime>("End")
                         .HasColumnType("timestamp");
-
-                    b.Property<DateTime>("ArchiveDate")
-                        .HasColumnType("Date");
 
                     b.Property<byte[]>("Data")
                         .HasColumnType("bytea");
