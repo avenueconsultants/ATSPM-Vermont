@@ -32,7 +32,7 @@ export default function handler(
     MAP_TILE_LAYER: process.env.MAP_TILE_LAYER,
     MAP_TILE_ATTRIBUTION: process.env.MAP_TILE_ATTRIBUTION,
     POWERED_BY_IMAGE_URL: process.env.POWERED_BY_IMAGE_URL,
-    SPONSOR_IMAGE_URL: process.env.POWERED_BY_IMAGE_URL,
+    SPONSOR_IMAGE_URL: process.env.SPONSOR_IMAGE_URL,
     MAP_DEFAULT_ZOOM: process.env.MAP_DEFAULT_ZOOM,
   })
 }
