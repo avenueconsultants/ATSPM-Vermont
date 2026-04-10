@@ -23,6 +23,7 @@ export type EnvVariables = {
   IDENTITY_URL: string | null
   DATA_URL: string | null
   SPEED_URL: string | null
+  SSO_VISIBLE_PROVIDERS: string | null
   MAP_DEFAULT_LATITUDE: string | null
   MAP_DEFAULT_LONGITUDE: string | null
   MAP_DEFAULT_ZOOM: string | null

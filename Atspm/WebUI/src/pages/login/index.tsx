@@ -1,9 +1,12 @@
 import { ResponsivePageLayout } from '@/components/ResponsivePage'
 import { useLogin } from '@/features/identity/api/getLogin'
 import IdentityDto from '@/features/identity/types/identityDto'
+import type { SsoProviderDefinition } from '@/features/identity/utils/ssoProviders'
+import {
+  loadVisibleSsoProviders,
+  redirectToExternalLogin,
+} from '@/features/identity/utils/ssoLogin'
 import { setSecureCookie } from '@/features/identity/utils'
-import { buildApiUrl } from '@/lib/axios'
-import { getEnv } from '@/utils/getEnv'
 import { LoadingButton } from '@mui/lab'
 import {
   Alert,
@@ -25,6 +28,7 @@ function Login() {
   const [errors, setErrors] = useState<string | null>(null)
   const [emailError, setEmailError] = useState<string | null>(null)
   const [passwordError, setPasswordError] = useState<string | null>(null)
+  const [visibleSsoProviders, setVisibleSsoProviders] = useState<SsoProviderDefinition[]>([])
 
   const {
     refetch,
@@ -81,20 +85,15 @@ function Login() {
     setPasswordError(null)
   }, [password])
 
+  useEffect(() => {
+    void loadVisibleSsoProviders().then(setVisibleSsoProviders)
+  }, [])
+
   if (data?.code === 200) {
     setSecureCookie('token', data.token)
     setSecureCookie('claims', data.claims.join(','))
     setSecureCookie('loggedIn', 'True')
     window.location.href = '/'
-  }
-
-  const redirectUser = async () => {
-    const env = await getEnv()
-    const externalLoginUrl = buildApiUrl(
-      env?.IDENTITY_URL,
-      '/api/v1/Account/external-login'
-    )
-    window.open(externalLoginUrl, '_self')
   }
 
   return (
@@ -170,18 +169,25 @@ function Login() {
             >
               Sign In
             </LoadingButton>
-            <Divider>
-              <Typography variant="caption">or</Typography>
-            </Divider>
-            <Button
-              variant="outlined"
-              sx={{ p: 1, mb: 1, mt: 1 }}
-              fullWidth
-              onClick={() => redirectUser()}
-            >
-              <Box sx={{ width: '20px', height: '20px', mr: 1 }}></Box>
-              Sign in with Utah Id
-            </Button>
+            {visibleSsoProviders.length > 0 && (
+              <>
+                <Divider>
+                  <Typography variant="caption">or</Typography>
+                </Divider>
+                {visibleSsoProviders.map((provider) => (
+                  <Button
+                    key={provider.key}
+                    variant="outlined"
+                    sx={{ p: 1, mb: 1, mt: 1 }}
+                    fullWidth
+                    onClick={() => void redirectToExternalLogin(provider.key)}
+                  >
+                    <Box sx={{ width: '20px', height: '20px', mr: 1 }}></Box>
+                    {provider.label}
+                  </Button>
+                ))}
+              </>
+            )}
             <Grid container justifyContent="space-between">
               <Grid item>
                 <Link

@@ -18,6 +18,7 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -27,6 +28,8 @@ using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Text;
+using Utah.Udot.Atspm.Infrastructure.Configuration;
+using Utah.Udot.Atspm.Infrastructure.Services;
 
 namespace Utah.Udot.Atspm.Infrastructure.Extensions
 {
@@ -60,13 +63,21 @@ namespace Utah.Udot.Atspm.Infrastructure.Extensions
         /// <returns></returns>
         public static IServiceCollection AddAtspmAuthentication(this IServiceCollection services, HostBuilderContext host)
         {
+            var oidcProviders = new OidcProviderOptions();
+            host.Configuration.GetSection("OidcProviders").Bind(oidcProviders.Providers);
+
+            services.Configure<OidcProviderOptions>(options =>
+            {
+                options.Providers = oidcProviders.Providers;
+            });
+
             services.Configure<CookiePolicyOptions>(options =>
             {
                 options.MinimumSameSitePolicy = SameSiteMode.None;
                 options.Secure = CookieSecurePolicy.Always;
             });
 
-            services.AddAuthentication(options =>
+            var authenticationBuilder = services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -87,73 +98,127 @@ namespace Utah.Udot.Atspm.Infrastructure.Extensions
                 };
             });
 
-            var oidc = host.Configuration.GetSection("Oidc");
-            if (oidc.Exists() && !string.IsNullOrEmpty(oidc["Authority"]) &&
-                !string.IsNullOrEmpty(oidc["ClientId"]) &&
-                !string.IsNullOrEmpty(oidc["ClientSecret"]) &&
-                !string.IsNullOrEmpty(oidc["CallbackPath"]))
+            foreach (var providerEntry in oidcProviders.Providers)
             {
-                services.AddAuthentication()
-            .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
-            {
-                options.Authority = oidc["Authority"];
-                options.ClientId = oidc["ClientId"];
-                options.ClientSecret = oidc["ClientSecret"];
-                options.ResponseType = OpenIdConnectResponseType.IdToken;
-                options.SaveTokens = true;
-                options.Scope.Clear();
-                options.Scope.Add("openid");
-                options.Scope.Add("email");
-                options.Scope.Add("profile");
-                options.Scope.Add("app:Atspm");
+                var providerKey = providerEntry.Key;
+                var provider = providerEntry.Value;
 
-                options.CallbackPath = oidc["CallbackPath"];
-
-                options.GetClaimsFromUserInfoEndpoint = true;
-                options.UseTokenLifetime = true;
-                options.SkipUnrecognizedRequests = true;
-
-                options.Events = new OpenIdConnectEvents
+                if (string.IsNullOrWhiteSpace(provider.Authority) ||
+                    string.IsNullOrWhiteSpace(provider.ClientId) ||
+                    string.IsNullOrWhiteSpace(provider.ClientSecret) ||
+                    string.IsNullOrWhiteSpace(provider.CallbackPath))
                 {
-                    OnRedirectToIdentityProvider = context =>
+                    continue;
+                }
+
+                var schemeName = string.IsNullOrWhiteSpace(provider.Scheme)
+                    ? $"oidc-{providerKey}"
+                    : provider.Scheme;
+                var displayName = string.IsNullOrWhiteSpace(provider.DisplayName)
+                    ? providerKey
+                    : provider.DisplayName;
+                var scopes = provider.Scopes.Count > 0
+                    ? provider.Scopes
+                    : new List<string> { "openid", "email", "profile" };
+                var publicCallbackPath = provider.CallbackPath.StartsWith("/identity/", StringComparison.OrdinalIgnoreCase)
+                    ? provider.CallbackPath
+                    : $"/identity{provider.CallbackPath}";
+
+                authenticationBuilder.AddOpenIdConnect(schemeName, options =>
+                {
+                    options.SignInScheme = IdentityConstants.ExternalScheme;
+                    options.Authority = provider.Authority;
+                    options.ClientId = provider.ClientId;
+                    options.ClientSecret = provider.ClientSecret;
+                    options.ResponseType = OpenIdConnectResponseType.IdToken;
+                    options.SaveTokens = true;
+                    options.Scope.Clear();
+                    foreach (var scope in scopes.Where(s => !string.IsNullOrWhiteSpace(s)))
                     {
-                        var b = new UriBuilder(context.ProtocolMessage.RedirectUri);
-                        b.Scheme = "https";
-                        b.Port = -1;
-                        context.ProtocolMessage.RedirectUri = b.ToString();
+                        options.Scope.Add(scope);
+                    }
 
-                        Console.WriteLine($"callback: {b.ToString()}");
+                    options.CallbackPath = provider.CallbackPath;
+                    options.NonceCookie.Path = publicCallbackPath;
+                    options.CorrelationCookie.Path = publicCallbackPath;
 
-                        return Task.CompletedTask;
-                    },
-                    //OnTokenResponseReceived = context =>
-                    //{
-                    //    var identity = context.Principal.Claims;
-                    //    return Task.CompletedTask;
-                    //},
-                    //OnUserInformationReceived = context =>
-                    //{
-                    //    var identity = context.Principal.Claims;
-                    //    return Task.CompletedTask;
-                    //},
-                    //OnAuthorizationCodeReceived = context =>
-                    //{
-                    //    var identity = context.Principal.Claims;
-                    //    return Task.CompletedTask;
-                    //},
-                    //OnTokenValidated = context =>
-                    //{
-                    //    var identity = context.Principal.Claims;
-                    //    return Task.CompletedTask;
-                    //},
-                };
-            });
+                    options.GetClaimsFromUserInfoEndpoint = true;
+                    options.UseTokenLifetime = true;
+                    options.SkipUnrecognizedRequests = true;
+
+                    options.Events = new OpenIdConnectEvents
+                    {
+                        OnRedirectToIdentityProvider = context =>
+                        {
+                            var b = new UriBuilder(context.ProtocolMessage.RedirectUri);
+                            b.Scheme = "https";
+                            if (!string.Equals(b.Host, "localhost", StringComparison.OrdinalIgnoreCase))
+                            {
+                                b.Port = -1;
+                            }
+                            else if (!string.Equals(b.Path, publicCallbackPath, StringComparison.OrdinalIgnoreCase))
+                            {
+                                b.Path = publicCallbackPath;
+                            }
+                            context.ProtocolMessage.RedirectUri = b.ToString();
+
+                            return Task.CompletedTask;
+                        },
+                        OnTokenValidated = context =>
+                        {
+                            NormalizeStandardClaims(context.Principal);
+                            return Task.CompletedTask;
+                        },
+                        OnTicketReceived = async context =>
+                        {
+                            var ticketHandler = context.HttpContext.RequestServices.GetService<IOidcTicketHandler>();
+                            if (ticketHandler == null)
+                            {
+                                context.Fail("No OIDC ticket handler is registered.");
+                                return;
+                            }
+
+                            await ticketHandler.HandleTicketReceivedAsync(context, providerKey, schemeName, displayName);
+                        }
+                    };
+                });
             }
 
-            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-            .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme);
+            authenticationBuilder.AddCookie(CookieAuthenticationDefaults.AuthenticationScheme);
 
             return services;
+        }
+
+        private static void NormalizeStandardClaims(ClaimsPrincipal? principal)
+        {
+            if (principal?.Identity is not ClaimsIdentity identity)
+            {
+                return;
+            }
+
+            EnsureClaim(identity, ClaimTypes.Email, "email", "preferred_username");
+            EnsureClaim(identity, ClaimTypes.GivenName, "given_name");
+            EnsureClaim(identity, ClaimTypes.Surname, "family_name");
+            EnsureClaim(identity, ClaimTypes.NameIdentifier, "sub", "oid");
+        }
+
+        private static void EnsureClaim(ClaimsIdentity identity, string targetType, params string[] sourceTypes)
+        {
+            if (identity.HasClaim(c => c.Type == targetType))
+            {
+                return;
+            }
+
+            var sourceClaim = sourceTypes
+                .Select(sourceType => identity.FindFirst(sourceType))
+                .FirstOrDefault(claim => claim != null);
+
+            if (sourceClaim == null || string.IsNullOrWhiteSpace(sourceClaim.Value))
+            {
+                return;
+            }
+
+            identity.AddClaim(new Claim(targetType, sourceClaim.Value, sourceClaim.ValueType, sourceClaim.Issuer));
         }
 
         /// <summary>

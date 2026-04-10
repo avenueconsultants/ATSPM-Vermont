@@ -17,6 +17,7 @@
 
 using Identity.Business.Tokens;
 using Microsoft.AspNetCore.Identity;
+using System.Security.Claims;
 using Utah.Udot.Atspm.Data.Models;
 
 namespace Identity.Business.Accounts
@@ -85,24 +86,36 @@ namespace Identity.Business.Accounts
             List<string> viewClaims = new List<string>();
 
             var claims = info.Principal.Claims;
-            var emailClaim = claims.FirstOrDefault(c => c.Type.Contains("email"));
-            var firstNameClaim = claims.FirstOrDefault(c => c.Type.Contains("givenname"));
-            var lastNameClaim = claims.FirstOrDefault(c => c.Type.Contains("surname"));
-
-            if (firstNameClaim == null || lastNameClaim == null || emailClaim == null)
+            var email = GetClaimValue(claims, ClaimTypes.Email, "email", "preferred_username", "upn");
+            if (string.IsNullOrWhiteSpace(email))
             {
                 var message = "Unable to access information from SSO, try again later";
                 return new AccountResult(StatusCodes.Status400BadRequest, "", new List<string>(), message);
             }
 
-            var email = emailClaim.Value;
-            var firstName = firstNameClaim.Value;
-            var lastName = lastNameClaim.Value;
+            var fullName = GetClaimValue(claims, ClaimTypes.Name, "name");
+            var firstName = GetClaimValue(claims, ClaimTypes.GivenName, "given_name");
+            var lastName = GetClaimValue(claims, ClaimTypes.Surname, "family_name");
+
+            if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
+            {
+                (firstName, lastName) = SplitName(fullName);
+            }
+
+            if (string.IsNullOrWhiteSpace(firstName))
+            {
+                firstName = email.Split('@', 2)[0];
+            }
+
+            if (string.IsNullOrWhiteSpace(lastName))
+            {
+                lastName = ".";
+            }
 
             var user = await _signInManager.UserManager.FindByEmailAsync(email);
-            var loginInfo = await _userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
+            var linkedUser = await _userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
 
-            if (user == null && loginInfo == null)
+            if (user == null && linkedUser == null)
             {
                 var createUserResult = await CreateUserAndLinkLogin(email, firstName, lastName, info);
                 if (createUserResult.Succeeded)
@@ -120,7 +133,7 @@ namespace Identity.Business.Accounts
                 return new AccountResult(StatusCodes.Status400BadRequest, "", new List<string>(), "Issue validating SSO");
             }
 
-            if (user != null && loginInfo == null)
+            if (user != null && linkedUser == null)
             {
                 var linkResult = await _userManager.AddLoginAsync(user, info);
                 if (linkResult.Succeeded)
@@ -133,11 +146,11 @@ namespace Identity.Business.Accounts
                 return new AccountResult(StatusCodes.Status400BadRequest, "", new List<string>(), "Issue linking external login");
             }
 
-            if (loginInfo != null)
+            if (linkedUser != null)
             {
-                await _signInManager.SignInAsync(user, isPersistent: false);
-                token = await tokenService.GenerateJwtTokenAsync(user);
-                viewClaims = await GetViewClaimsForUser(user);
+                await _signInManager.SignInAsync(linkedUser, isPersistent: false);
+                token = await tokenService.GenerateJwtTokenAsync(linkedUser);
+                viewClaims = await GetViewClaimsForUser(linkedUser);
                 return new AccountResult(StatusCodes.Status200OK, token, viewClaims, null);
             }
 
@@ -162,6 +175,36 @@ namespace Identity.Business.Accounts
             }
 
             return createUserResult;
+        }
+
+        private static string? GetClaimValue(IEnumerable<Claim> claims, params string[] claimTypes)
+        {
+            return claimTypes
+                .Select(claimType => claims.FirstOrDefault(c => c.Type == claimType)?.Value)
+                .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+        }
+
+        private static (string? FirstName, string? LastName) SplitName(string? fullName)
+        {
+            if (string.IsNullOrWhiteSpace(fullName))
+            {
+                return (null, null);
+            }
+
+            var parts = fullName
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            if (parts.Length == 0)
+            {
+                return (null, null);
+            }
+
+            if (parts.Length == 1)
+            {
+                return (parts[0], null);
+            }
+
+            return (parts[0], string.Join(" ", parts.Skip(1)));
         }
 
         private async Task<List<string>> GetViewClaimsForUser(ApplicationUser user)

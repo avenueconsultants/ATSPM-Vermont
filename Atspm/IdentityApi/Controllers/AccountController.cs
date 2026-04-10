@@ -16,10 +16,8 @@
 #endregion
 
 using Asp.Versioning;
-using FluentFTP.Helpers;
 using Identity.Business.Accounts;
 using Identity.Models.Account;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -40,7 +38,7 @@ namespace Identity.Controllers
         private readonly SignInManager<ApplicationUser> signInManager;
         private readonly IEmailService emailService;
         private readonly IAccountService accountService;
-        private readonly IConfiguration configuration;
+        private readonly OidcProviderOptions oidcProviderOptions;
 
 
         public AccountController(
@@ -48,13 +46,13 @@ namespace Identity.Controllers
             SignInManager<ApplicationUser> signInManager,
             IAccountService accountService,
             IEmailService emailService,
-            IConfiguration configuration)
+            IOptions<OidcProviderOptions> oidcProviderOptions)
         {
             this.userManager = userManager;
             this.signInManager = signInManager;
             this.accountService = accountService;
             this.emailService = emailService;
-            this.configuration = configuration;
+            this.oidcProviderOptions = oidcProviderOptions.Value;
         }
 
         [HttpPost("register")]
@@ -125,37 +123,29 @@ namespace Identity.Controllers
         }
 
         [HttpGet("external-login")]
-        public IActionResult ExternalLogin()
+        public IActionResult ExternalLogin([FromQuery] string provider)
         {
-            var redirectUri = Url.Action("OIDCLoginCallback", "Account");
-            var properties = signInManager.ConfigureExternalAuthenticationProperties(OpenIdConnectDefaults.AuthenticationScheme, redirectUri);
-
-            return Challenge(properties, OpenIdConnectDefaults.AuthenticationScheme);
-        }
-
-        [Authorize(AuthenticationSchemes = OpenIdConnectDefaults.AuthenticationScheme)]
-        [HttpPost("OIDCLoginCallback")]
-        [HttpGet("OIDCLoginCallback")]
-        public async Task<IActionResult> OIDCLoginCallback()
-        {
-            var info = await signInManager.GetExternalLoginInfoAsync();
-
-            if (info == null)
+            if (string.IsNullOrWhiteSpace(provider))
             {
-                // Handle login failure (e.g., redirect to an error page)
-                return BadRequest("External login information not available. Make sure you've authenticated with the external provider.");
+                return BadRequest("Unknown external login provider.");
             }
 
-            var result = await accountService.HandleSsoRequest(info);
+            var providerKey = oidcProviderOptions.Providers.Keys.FirstOrDefault(key =>
+                string.Equals(key, provider, StringComparison.OrdinalIgnoreCase));
 
-            if (result.Code == StatusCodes.Status200OK)
+            if (providerKey == null ||
+                !oidcProviderOptions.Providers.TryGetValue(providerKey, out var providerConfiguration))
             {
-                return Redirect($"{configuration["AtspmSite"]}/sso-login?token={result.Token}&claims={result.Claims.Join(",")}");
+                return BadRequest("Unknown external login provider.");
             }
 
-            return Redirect($"{configuration["AtspmSite"]}/sso-login?error={result.Message}");
-        }
+            var schemeName = string.IsNullOrWhiteSpace(providerConfiguration.Scheme)
+                ? $"oidc-{providerKey}"
+                : providerConfiguration.Scheme;
+            var properties = signInManager.ConfigureExternalAuthenticationProperties(schemeName, "/");
 
+            return Challenge(properties, schemeName);
+        }
 
         [Authorize]
         [HttpPost("link-external-login")]
