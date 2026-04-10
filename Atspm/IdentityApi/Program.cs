@@ -20,6 +20,7 @@ using Identity.Business.Agency;
 using Identity.Business.Claims;
 using Identity.Business.Tokens;
 using Identity.Business.Users;
+using IdentityApi.Services;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.AspNetCore.Identity;
@@ -27,6 +28,7 @@ using Microsoft.AspNetCore.Mvc;
 using Utah.Udot.Atspm.Data;
 using Utah.Udot.Atspm.Data.Models;
 using Utah.Udot.Atspm.Infrastructure.Configuration;
+using Utah.Udot.Atspm.Infrastructure.Services;
 
 //git 2
 
@@ -70,6 +72,7 @@ builder.Host
         s.AddScoped<IAgencyService, AgencyService>();
         s.AddScoped<IAccountService, AccountService>();
         s.AddScoped<ClaimsService, ClaimsService>();
+        s.AddScoped<IOidcTicketHandler, OidcTicketHandler>();
         s.AddScoped<TokenService, TokenService>();
         s.AddScoped<RoleManager<IdentityRole>>();
         s.AddScoped<UserManager<ApplicationUser>>();

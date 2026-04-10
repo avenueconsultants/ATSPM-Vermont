@@ -125,6 +125,26 @@ services:
       EmailConfiguration__SmtpEmailService__UserName: "${EmailConfiguration__UserName}"
       EmailConfiguration__SmtpEmailService__Password: "${EmailConfiguration__Password}"
       EmailConfiguration__SmtpEmailService__EnableSsl: "${EmailConfiguration__EnableSsl}"
+      AtspmSite: "${ATSPM_SITE}"
+
+      OidcProviders__utahid__DisplayName: "${OIDC_PROVIDERS__UTAHID__DISPLAYNAME}"
+      OidcProviders__utahid__Authority: "${OIDC_PROVIDERS__UTAHID__AUTHORITY}"
+      OidcProviders__utahid__ClientId: "${OIDC_PROVIDERS__UTAHID__CLIENTID}"
+      OidcProviders__utahid__ClientSecret: "${OIDC_PROVIDERS__UTAHID__CLIENTSECRET}"
+      OidcProviders__utahid__CallbackPath: "${OIDC_PROVIDERS__UTAHID__CALLBACKPATH}"
+      OidcProviders__utahid__Scopes__0: "${OIDC_PROVIDERS__UTAHID__SCOPES__0}"
+      OidcProviders__utahid__Scopes__1: "${OIDC_PROVIDERS__UTAHID__SCOPES__1}"
+      OidcProviders__utahid__Scopes__2: "${OIDC_PROVIDERS__UTAHID__SCOPES__2}"
+      OidcProviders__utahid__Scopes__3: "${OIDC_PROVIDERS__UTAHID__SCOPES__3}"
+
+      OidcProviders__entra__DisplayName: "${OIDC_PROVIDERS__ENTRA__DISPLAYNAME}"
+      OidcProviders__entra__Authority: "${OIDC_PROVIDERS__ENTRA__AUTHORITY}"
+      OidcProviders__entra__ClientId: "${OIDC_PROVIDERS__ENTRA__CLIENTID}"
+      OidcProviders__entra__ClientSecret: "${OIDC_PROVIDERS__ENTRA__CLIENTSECRET}"
+      OidcProviders__entra__CallbackPath: "${OIDC_PROVIDERS__ENTRA__CALLBACKPATH}"
+      OidcProviders__entra__Scopes__0: "${OIDC_PROVIDERS__ENTRA__SCOPES__0}"
+      OidcProviders__entra__Scopes__1: "${OIDC_PROVIDERS__ENTRA__SCOPES__1}"
+      OidcProviders__entra__Scopes__2: "${OIDC_PROVIDERS__ENTRA__SCOPES__2}"
     volumes:      
       - ${CERT_LOCATION}
     depends_on:

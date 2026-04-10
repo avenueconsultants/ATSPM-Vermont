@@ -69,6 +69,8 @@ namespace Utah.Udot.Atspm.IdentityTests.Controllers
 
             _userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
                 .ReturnsAsync(user);
+            _userManagerMock.Setup(um => um.GetRolesAsync(user))
+                .ReturnsAsync(new List<string> { "Admin" });
 
             // Act
             var result = await _profileController.GetProfile();
@@ -79,11 +81,12 @@ namespace Utah.Udot.Atspm.IdentityTests.Controllers
 
             Assert.Equal(user.FullName, $"{profileViewModel.FirstName} {profileViewModel.LastName}");
             Assert.Equal(user.Email, profileViewModel.Email);
+            Assert.Equal("Admin", profileViewModel.Roles);
             // Assert other profile properties as needed
         }
 
         [Fact]
-        public async Task GetProfile_WithInvalidUser_ReturnsNotFound()
+        public async Task GetProfile_WithInvalidUser_ReturnsUnauthorized()
         {
             // Arrange
             _userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
@@ -93,7 +96,8 @@ namespace Utah.Udot.Atspm.IdentityTests.Controllers
             var result = await _profileController.GetProfile();
 
             // Assert
-            Assert.IsType<NotFoundResult>(result);
+            var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result);
+            Assert.Equal("User not found", unauthorizedResult.Value);
         }
 
         [Fact]
