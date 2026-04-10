@@ -20,6 +20,7 @@ using IdentityApi.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using System.Security.Claims;
@@ -58,14 +59,14 @@ namespace Utah.Udot.Atspm.IdentityTests.Services
             var handler = BuildHandler(accountServiceMock);
             var context = BuildContext(new ClaimsPrincipal(new ClaimsIdentity(new[]
             {
-                new Claim("sub", "raw-sub-only")
+                new Claim(ClaimTypes.Email, "user@example.com")
             }, "oidc")));
 
             await handler.HandleTicketReceivedAsync(context, "entra", "oidc-entra", "Microsoft Entra");
 
             accountServiceMock.Verify(service => service.HandleSsoRequest(It.IsAny<ExternalLoginInfo>()), Times.Never);
             Assert.Equal(
-                "https://atspm.example/sso-login?error=External+login+identifier+not+available.",
+                "https://atspm.example/sso-login?error=External%20login%20identifier%20not%20available.",
                 context.Response.Headers.Location.ToString());
         }
 
